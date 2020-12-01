@@ -22,7 +22,7 @@ mkdir %arduinoSketchbookDir%\tools\%className%\src\
 copy %~dp0tool\* %arduinoSketchbookDir%\tools\%className%\tool\*
 copy %~dp0src\* %arduinoSketchbookDir%\tools\%className%\src\*
 
-#cleanup
+echo cleanup for github upload
 cd bin
 del/F/Q/S *
 cd ..

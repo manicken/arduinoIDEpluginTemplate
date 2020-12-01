@@ -52,7 +52,7 @@ import processing.app.tools.Tool;
 import processing.app.Sketch;
 import processing.app.PreferencesData;
 
-//import static processing.app.I18n.tr;
+import static processing.app.I18n.tr; // translate (multi language support)
 
 import com.manicken.SettingsDialog;
 import com.manicken.Reflect;
@@ -62,6 +62,7 @@ import com.manicken.Reflect;
  */
 public class pluginTemplate implements Tool {
 	boolean debugPrint = true;
+	boolean useSeparateExtensionsMainMenu = true; // good for development for quick access
 
 	Editor editor;// for the plugin
 	Sketch sketch; // for the plugin
@@ -145,7 +146,10 @@ public class pluginTemplate implements Tool {
 			sketch = this.editor.getSketch();
 			System.out.println("\nSketch folder:\n  " + sketch.getFolder());
 			
-			initMenu();
+			if (useSeparateExtensionsMainMenu)
+				initAtSeparateExtensionsMenu();
+			else
+				initAtToolsMenu();
 
 			started = true;
 
@@ -158,25 +162,42 @@ public class pluginTemplate implements Tool {
 		}
 	}
 
-	/**
-	 * this initializes the submenu for the tool
-	 */
-	private void initMenu()
+	private void initAtSeparateExtensionsMenu()
 	{
 		JMenuBar menubar = editor.getJMenuBar();
-		int toolsMenuIndex = GetMenuBarItemIndex(menubar, "Tools");
-		System.out.println("toolsMenuIndex: " + toolsMenuIndex);
+		int toolsMenuIndex = GetMenuBarItemIndex(menubar, tr("Tools"));
+		JMenu extensionsMenu = new JMenu(tr("Extensions"));
+		JMenu thisToolMenu = new JMenu(thisToolMenuTitle);	
 
+		menubar.add(extensionsMenu, toolsMenuIndex+1);
+		menubar.revalidate(); // "repaint" menu bar with the new item
+		extensionsMenu.add(thisToolMenu);
+		// create new special menu
+		CreatePluginMenu(thisToolMenu);
+		// remove original menu
+		JMenu toolsMenu = (JMenu) Reflect.GetField("toolsMenu", this.editor);
+		int thisToolMenuIndex = GetMenuItemIndex(toolsMenu, thisToolMenuTitle);
+		toolsMenu.remove(thisToolMenuIndex);
+		toolsMenu.remove(thisToolMenuIndex); // to remove the additional seperator
+	}
+
+	private void initAtToolsMenu()
+	{
 		toolsMenu = (JMenu) Reflect.GetField("toolsMenu", this.editor);
-
 		int thisToolIndex = GetMenuItemIndex(toolsMenu, thisToolMenuTitle);
-		JMenu thisToolMenu = new JMenu(thisToolMenuTitle);		
-		toolsMenu.insert(thisToolMenu, thisToolIndex+1);
+		JMenu thisToolMenu = new JMenu(thisToolMenuTitle);
+		// create new special menu
+		CreatePluginMenu(thisToolMenu);
+		// replace original menu
 		toolsMenu.remove(thisToolIndex);
-		
+		toolsMenu.insert(thisToolMenu, thisToolIndex);
+	}
+
+	private void CreatePluginMenu(JMenu thisToolMenu)
+	{
 		JMenuItem newItem = null;
 
-		newItem = new JMenuItem("Activate");
+		newItem = new JMenuItem("Activate/SaveCurrent");
 		thisToolMenu.add(newItem);
 		newItem.addActionListener(event -> Activate());
 		
@@ -184,7 +205,7 @@ public class pluginTemplate implements Tool {
 		thisToolMenu.add(newItem);
 		newItem.addActionListener(event -> Deactivate());
 
-		newItem = new JMenuItem("Select Dialog");
+		newItem = new JMenuItem("Show settings Dialog");
 		thisToolMenu.add(newItem);
 		newItem.addActionListener(event -> ShowSettingsDialog());
 	}
