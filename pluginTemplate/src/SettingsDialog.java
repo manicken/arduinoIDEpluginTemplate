@@ -47,8 +47,8 @@ public class SettingsDialog extends JPanel
         //lblServerport.setBounds (5, 5, 100, 25);
         //txtServerport.setBounds (85, 5, 100, 25);
 		//chkAutostart.setBounds (4, 30, 232, 30);
-        chkDebugMode.setBounds (4, 65, 232, 30);
-        jcomp4.setBounds (45, 110, 225, 385);
+        chkDebugMode.setBounds (0, 0, 232, 30);
+        jcomp4.setBounds (4, 30, 225, 385);
     }
 
 }

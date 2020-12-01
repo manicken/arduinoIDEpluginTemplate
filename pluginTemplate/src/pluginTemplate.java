@@ -165,7 +165,7 @@ public class pluginTemplate implements Tool {
 	{
 		JMenuBar menubar = editor.getJMenuBar();
 		int toolsMenuIndex = GetMenuBarItemIndex(menubar, "Tools");
-		System.out.println("toolsMenuIndex: " +toolsMenuIndex);
+		System.out.println("toolsMenuIndex: " + toolsMenuIndex);
 
 		toolsMenu = (JMenu) Reflect.GetField("toolsMenu", this.editor);
 
@@ -176,7 +176,7 @@ public class pluginTemplate implements Tool {
 		
 		JMenuItem newItem = null;
 
-		newItem = new JMenuItem("Activate/SaveCurrent");
+		newItem = new JMenuItem("Activate");
 		thisToolMenu.add(newItem);
 		newItem.addActionListener(event -> Activate());
 		
