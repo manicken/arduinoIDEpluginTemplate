@@ -165,20 +165,28 @@ public class pluginTemplate implements Tool {
 	private void initAtSeparateExtensionsMenu()
 	{
 		JMenuBar menubar = editor.getJMenuBar();
+		int existingExtensionsMenuIndex = GetMenuBarItemIndex(menubar, tr("Extensions"));
 		int toolsMenuIndex = GetMenuBarItemIndex(menubar, tr("Tools"));
-		JMenu extensionsMenu = new JMenu(tr("Extensions"));
+		JMenu extensionsMenu = null;
+
+		if (existingExtensionsMenuIndex == -1)
+			extensionsMenu = new JMenu(tr("Extensions"));
+		else
+			extensionsMenu = (JMenu)menubar.getSubElements()[existingExtensionsMenuIndex];
+
 		JMenu thisToolMenu = new JMenu(thisToolMenuTitle);	
 
-		menubar.add(extensionsMenu, toolsMenuIndex+1);
+		if (existingExtensionsMenuIndex == -1)
+			menubar.add(extensionsMenu, toolsMenuIndex+1);
 		menubar.revalidate(); // "repaint" menu bar with the new item
 		extensionsMenu.add(thisToolMenu);
 		// create new special menu
 		CreatePluginMenu(thisToolMenu);
-		// remove original menu
-		JMenu toolsMenu = (JMenu) Reflect.GetField("toolsMenu", this.editor);
-		int thisToolMenuIndex = GetMenuItemIndex(toolsMenu, thisToolMenuTitle);
-		toolsMenu.remove(thisToolMenuIndex);
-		toolsMenu.remove(thisToolMenuIndex); // to remove the additional seperator
+		// remove original menu at the moment sometimes buggy
+		//JMenu toolsMenu = (JMenu) Reflect.GetField("toolsMenu", this.editor);
+		//int thisToolMenuIndex = GetMenuItemIndex(toolsMenu, thisToolMenuTitle);
+		//toolsMenu.remove(thisToolMenuIndex);
+		//toolsMenu.revalidate();
 	}
 
 	private void initAtToolsMenu()
