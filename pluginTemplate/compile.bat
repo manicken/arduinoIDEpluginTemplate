@@ -22,6 +22,10 @@ mkdir %arduinoSketchbookDir%\tools\%className%\src\
 copy %~dp0tool\* %arduinoSketchbookDir%\tools\%className%\tool\*
 copy %~dp0src\* %arduinoSketchbookDir%\tools\%className%\src\*
 
+#cleanup
+cd bin
+del/F/Q/S *
+cd ..
 echo ***************
 echo *** Success ***
 echo ***************

@@ -34,9 +34,11 @@ import java.util.Map;
 import java.util.Scanner;
 
 
+import javax.swing.JMenuBar;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import javax.swing.MenuElement;
 
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -75,6 +77,7 @@ public class pluginTemplate implements Tool {
 		this.editor = editor;
 
 		// workaround to make sure that init is run after the Arduino IDE gui has loaded
+		// otherwise any System.out(will never be shown at the init phase) 
 		editor.addWindowListener(new WindowAdapter() {
 			public void windowOpened(WindowEvent e) {
 			  init();
@@ -85,27 +88,43 @@ public class pluginTemplate implements Tool {
 
 	public void run() {// required by tool loader
 		// this is not used when using custom menu (see down @initMenu())
+		// otherwise for very simple plugins
+		// this is run when click the menu item
 	}
 
 	public String getMenuTitle() {// required by tool loader
 		return thisToolMenuTitle;
 	}
 
+	/**
+	 * used by the custom menu
+	 */
 	private void Activate()
 	{
 		
 	}
 
+	/**
+	 * used by the custom menu
+	 */
 	private void Deactivate()
 	{
 
 	}
 
+	/**
+	 * simple FileExists
+	 * @param pathname
+	 * @return
+	 */
 	private boolean FileExists(String pathname)
 	{
 		return new File(pathname).exists();
 	}
 
+	/**
+	 * This is the code that runs after the Arduino IDE GUI has been loaded
+	 */
 	private void init() {
 		rootDir = GetArduinoRootDir();
 
@@ -130,6 +149,8 @@ public class pluginTemplate implements Tool {
 
 			started = true;
 
+			
+
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.err.println(thisToolMenuTitle + " could not start!!!");
@@ -137,8 +158,15 @@ public class pluginTemplate implements Tool {
 		}
 	}
 
+	/**
+	 * this initializes the submenu for the tool
+	 */
 	private void initMenu()
 	{
+		JMenuBar menubar = editor.getJMenuBar();
+		int toolsMenuIndex = GetMenuBarItemIndex(menubar, "Tools");
+		System.out.println("toolsMenuIndex: " +toolsMenuIndex);
+
 		toolsMenu = (JMenu) Reflect.GetField("toolsMenu", this.editor);
 
 		int thisToolIndex = GetMenuItemIndex(toolsMenu, thisToolMenuTitle);
@@ -161,6 +189,9 @@ public class pluginTemplate implements Tool {
 		newItem.addActionListener(event -> ShowSettingsDialog());
 	}
 
+	/**
+	 * Just a simple dialog to show plugin settings
+	 */
 	public void ShowSettingsDialog() { // 
 		SettingsDialog sd = new SettingsDialog();
 		//cd.txtServerport.setText(Integer.toString(serverPort));
@@ -175,6 +206,15 @@ public class pluginTemplate implements Tool {
 		} else { System.out.println("Cancelled"); }
 	}
 
+	/**
+	 * Workaround
+	 * To get the current "Initial" plugin menu index
+	 * So that it can be replaced by
+	 * a custom menu item with submenus
+	 * @param menu
+	 * @param name
+	 * @return
+	 */
 	public int GetMenuItemIndex(JMenu menu, String name) {
 		//System.out.println("try get menu: " + name);
 		for ( int i = 0; i < menu.getItemCount(); i++) {
@@ -187,6 +227,29 @@ public class pluginTemplate implements Tool {
 		return -1;
 	}
 
+	/**
+	 * Experimental way of getting tools menu, not working at the moment
+	 * @param menuBar
+	 * @param name
+	 * @return
+	 */
+	public int GetMenuBarItemIndex(JMenuBar menuBar, String name) {
+		//System.out.println("try get menu: " + name);
+		MenuElement[] items = menuBar.getSubElements();
+		for ( int i = 0; i < items.length; i++) {
+			//System.out.println("try get menu item @ " + i);
+			JMenu menu = (JMenu)items[i];
+			if (menu == null) continue; // happens on seperators
+			if (menu.getText() == name)
+				return i;
+		}
+		return -1;
+	}
+
+	/**
+	 * Gets the Arduino Install Folder
+	 * @return
+	 */
 	public String GetArduinoRootDir() {
 		try {
 			File file = BaseNoGui.getToolsFolder();
@@ -194,6 +257,11 @@ public class pluginTemplate implements Tool {
 		} catch (Exception e) { e.printStackTrace(); return ""; }
 	}
 
+	/**
+	 * Gets this plugin jar location
+	 * good to know when having both SketchBook and ArduinoInstallDir plugins at the same time
+	 * @return
+	 */
 	public String GetJarFileDir() {
 		try {
 			File file = new File(this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
@@ -201,6 +269,11 @@ public class pluginTemplate implements Tool {
 		}catch (Exception e) { e.printStackTrace(); return ""; }
 	}
 
+	/**
+	 * Just a simplifier to save files into the sketch folder
+	 * @param name
+	 * @return
+	 */
 	public String loadFile(String name) {
 		File file = new File(sketch.getFolder(), name);
 		boolean exists = file.exists();
@@ -217,6 +290,11 @@ public class pluginTemplate implements Tool {
 		}
 	}
 
+	/**
+	 * Just a simplifier to load files from the sketch folder
+	 * @param name
+	 * @param contents
+	 */
 	public void saveFile(String name, String contents) {
 		try {
             // Constructs a FileWriter given a file name, using the platform's default charset
