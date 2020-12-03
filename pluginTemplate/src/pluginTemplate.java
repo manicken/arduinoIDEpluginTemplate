@@ -4,7 +4,7 @@
   Part of the Processing project - http://processing.org
 
   Copyright (c) 2008 Ben Fry and Casey Reas
-  Copyright (c) 2020 Jannik Leif Simon Svensson (1984)- Sweden
+  Copyright (c) 2020 Jannik LS Svensson (1984)- Sweden
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@ import java.io.FileWriter;
 import java.io.StringWriter;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -56,6 +57,7 @@ import static processing.app.I18n.tr; // translate (multi language support)
 
 import com.manicken.SettingsDialog;
 import com.manicken.Reflect;
+import com.manicken.CustomMenu;
 
 /**
  * 
@@ -64,12 +66,17 @@ public class pluginTemplate implements Tool {
 	boolean debugPrint = true;
 	boolean useSeparateExtensionsMainMenu = true; // good for development for quick access
 
+	boolean activated = false;
+
 	Editor editor;// for the plugin
 	Sketch sketch; // for the plugin
 
+	CustomMenu customMenu = null;
 	JMenu toolsMenu; // for the plugin, uses reflection to get
 	
-	String thisToolMenuTitle = "pluginTemplate";
+	String thisToolMenuTitle = "Plugin Template";
+	String thisToolPrefName = "pluginTemplate"; // used to save settings in the global pref.
+	
 	String rootDir;
 	
 	boolean started = false;
@@ -102,7 +109,9 @@ public class pluginTemplate implements Tool {
 	 */
 	private void Activate()
 	{
-		
+		activated = true;
+		processing.app.PreferencesData.setBoolean("manicken."+thisToolPrefName+".activated", activated); // default value is defined at top.
+		System.out.println("\n" + thisToolMenuTitle + " Activated ***\n");
 	}
 
 	/**
@@ -110,7 +119,9 @@ public class pluginTemplate implements Tool {
 	 */
 	private void Deactivate()
 	{
-
+		activated = false;
+		processing.app.PreferencesData.setBoolean("manicken."+thisToolPrefName+".activated", activated); // default value is defined at top.
+		System.out.println("\n" + thisToolMenuTitle + " Deactivated ***\n");
 	}
 
 	/**
@@ -129,12 +140,35 @@ public class pluginTemplate implements Tool {
 	private void init() {
 		rootDir = GetArduinoRootDir();
 
-		System.out.println("init " + thisToolMenuTitle);
+		activated = processing.app.PreferencesData.getBoolean("manicken."+thisToolPrefName+".activated", activated); // default value is defined at top.
+		
+		System.out.println("\n*** starting " + thisToolMenuTitle + " ***\n");
 
+		try{
+			customMenu = new CustomMenu(this.editor, thisToolMenuTitle, 
+				new JMenuItem[] {
+					CustomMenu.Item("Activate", event -> Activate()),
+					CustomMenu.Item("Deactivate", event -> Deactivate()),
+					CustomMenu.Item("Settings", event -> ShowSettingsDialog())
+				});
+			customMenu.Init(useSeparateExtensionsMainMenu);
+
+			started = true;
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.err.println(thisToolMenuTitle + " could not start!!!");
+			return;
+		}
+
+		if (!activated) return;
+
+		sketch = this.editor.getSketch();
 		// this is just a showoff for different folders
 		// they could be comment out or removed when developing real plugin
 		if (debugPrint) // enabled in this template by default
 		{
+			System.out.println("\nSketch folder:\n  " + sketch.getFolder());
 			System.out.println("\nArduino install dir:\n  " + rootDir);
 			System.out.println("\nGetJarFileDir():\n  " + GetJarFileDir());
 			System.out.println("\nBaseNoGui.getToolsFolder():\n  " + BaseNoGui.getToolsFolder());
@@ -142,80 +176,6 @@ public class pluginTemplate implements Tool {
 			System.out.println("\nBaseNoGui.getSketchbookFolder():\n  " + BaseNoGui.getSketchbookFolder());
 			System.out.println("\nBaseNoGui.getSettingsFile(\"preferences.txt\"):\n  " + BaseNoGui.getSettingsFile("preferences.txt"));
 		}
-		try{
-			sketch = this.editor.getSketch();
-			System.out.println("\nSketch folder:\n  " + sketch.getFolder());
-			
-			if (useSeparateExtensionsMainMenu)
-				initAtSeparateExtensionsMenu();
-			else
-				initAtToolsMenu();
-
-			started = true;
-
-			
-
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.err.println(thisToolMenuTitle + " could not start!!!");
-			return;
-		}
-	}
-
-	private void initAtSeparateExtensionsMenu()
-	{
-		JMenuBar menubar = editor.getJMenuBar();
-		int existingExtensionsMenuIndex = GetMenuBarItemIndex(menubar, tr("Extensions"));
-		int toolsMenuIndex = GetMenuBarItemIndex(menubar, tr("Tools"));
-		JMenu extensionsMenu = null;
-
-		if (existingExtensionsMenuIndex == -1)
-			extensionsMenu = new JMenu(tr("Extensions"));
-		else
-			extensionsMenu = (JMenu)menubar.getSubElements()[existingExtensionsMenuIndex];
-
-		JMenu thisToolMenu = new JMenu(thisToolMenuTitle);	
-
-		if (existingExtensionsMenuIndex == -1)
-			menubar.add(extensionsMenu, toolsMenuIndex+1);
-		menubar.revalidate(); // "repaint" menu bar with the new item
-		extensionsMenu.add(thisToolMenu);
-		// create new special menu
-		CreatePluginMenu(thisToolMenu);
-		// remove original menu at the moment sometimes buggy
-		//JMenu toolsMenu = (JMenu) Reflect.GetField("toolsMenu", this.editor);
-		//int thisToolMenuIndex = GetMenuItemIndex(toolsMenu, thisToolMenuTitle);
-		//toolsMenu.remove(thisToolMenuIndex);
-		//toolsMenu.revalidate();
-	}
-
-	private void initAtToolsMenu()
-	{
-		toolsMenu = (JMenu) Reflect.GetField("toolsMenu", this.editor);
-		int thisToolIndex = GetMenuItemIndex(toolsMenu, thisToolMenuTitle);
-		JMenu thisToolMenu = new JMenu(thisToolMenuTitle);
-		// create new special menu
-		CreatePluginMenu(thisToolMenu);
-		// replace original menu
-		toolsMenu.remove(thisToolIndex);
-		toolsMenu.insert(thisToolMenu, thisToolIndex);
-	}
-
-	private void CreatePluginMenu(JMenu thisToolMenu)
-	{
-		JMenuItem newItem = null;
-
-		newItem = new JMenuItem("Activate/SaveCurrent");
-		thisToolMenu.add(newItem);
-		newItem.addActionListener(event -> Activate());
-		
-		newItem = new JMenuItem("Deactivate");
-		thisToolMenu.add(newItem);
-		newItem.addActionListener(event -> Deactivate());
-
-		newItem = new JMenuItem("Show settings Dialog");
-		thisToolMenu.add(newItem);
-		newItem.addActionListener(event -> ShowSettingsDialog());
 	}
 
 	/**
@@ -233,46 +193,6 @@ public class pluginTemplate implements Tool {
 			//autostart = cd.chkAutostart.isSelected();
 			debugPrint = sd.chkDebugMode.isSelected();
 		} else { System.out.println("Cancelled"); }
-	}
-
-	/**
-	 * Workaround
-	 * To get the current "Initial" plugin menu index
-	 * So that it can be replaced by
-	 * a custom menu item with submenus
-	 * @param menu
-	 * @param name
-	 * @return
-	 */
-	public int GetMenuItemIndex(JMenu menu, String name) {
-		//System.out.println("try get menu: " + name);
-		for ( int i = 0; i < menu.getItemCount(); i++) {
-			//System.out.println("try get menu item @ " + i);
-			JMenuItem item = menu.getItem(i);
-			if (item == null) continue; // happens on seperators
-			if (item.getText() == name)
-				return i;
-		}
-		return -1;
-	}
-
-	/**
-	 * Experimental way of getting tools menu, not working at the moment
-	 * @param menuBar
-	 * @param name
-	 * @return
-	 */
-	public int GetMenuBarItemIndex(JMenuBar menuBar, String name) {
-		//System.out.println("try get menu: " + name);
-		MenuElement[] items = menuBar.getSubElements();
-		for ( int i = 0; i < items.length; i++) {
-			//System.out.println("try get menu item @ " + i);
-			JMenu menu = (JMenu)items[i];
-			if (menu == null) continue; // happens on seperators
-			if (menu.getText() == name)
-				return i;
-		}
-		return -1;
 	}
 
 	/**

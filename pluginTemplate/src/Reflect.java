@@ -25,6 +25,24 @@ public class Reflect {
 		}
 	}
 
+	/**
+	 * Reflect Set Field wrapper method
+	 */
+	public static boolean SetField(String name, Object obj, Object value) {
+		try {
+			java.lang.reflect.Field f = obj.getClass().getDeclaredField(name);
+			f.setAccessible(true);
+			f.set(obj, value);
+			return true;
+		} catch (Exception e) {
+			System.err.println("****************************************");
+			System.err.println("************cannot reflect**************");
+			System.err.println("****************************************");
+			e.printStackTrace();
+			return false;
+		}
+	}
+
 	public static Object InvokeMethod(String name, Object src, Object... parameters)
 	{
 		Class<?>[] parameterTypes = new Class<?>[parameters.length];
